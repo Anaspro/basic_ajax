@@ -1,0 +1,105 @@
+Follow the below given steps 
+1) Create a file and enter the database details .let it be “db.php”
+
+<?php
+mysql_connect(“localhost”,”root”,”password”);
+mysql_select_db(“store”);
+?>
+
+2) Create a page to list the details . here it is “ajax.php”
+
+<?php
+include(“db.php”);
+$itemPerPage=3;
+$totalCategories=mysql_num_rows(mysql_query(“SELECT category_id as total FROM category”));
+$lastPage   =ceil($totalCategories/$itemPerPage);
+$categoryResult=mysql_query(“SELECT * FROM category ORDER BY category_id DESC LIMIT $itemPerPage”);
+?>
+<script type=”text/javascript”>
+function getNextPage(pageno){
+xmlHttp=GetXmlHttpObject();
+if (xmlHttp==null){
+alert (“Your browser does not support AJAX!”);
+return;
+}
+var url=”next-page.php?”;
+url=url+”&page_no=”+pageno;
+url=url+”&sid=”+Math.random();
+//alert(url);
+xmlHttp.onreadystatechange=stateChangednextPage;
+xmlHttp.open(“GET”,url,true);
+xmlHttp.send(null);
+}
+
+function stateChangednextPage(){
+if (xmlHttp.readyState==4)
+document.getElementById(“nextPage”).innerHTML=xmlHttp.responseText;
+}
+
+if(!window.GetXmlHttpObject) {
+function GetXmlHttpObject(){
+var xmlHttp=null;
+try	{// Firefox, Opera 8.0+, Safari
+xmlHttp=new XMLHttpRequest();
+}
+catch (e)	{// Internet Explorer
+try	{
+xmlHttp=new ActiveXObject(“Msxml2.XMLHTTP”);
+}
+catch (e){
+xmlHttp=new ActiveXObject(“Microsoft.XMLHTTP”);
+}
+}
+return xmlHttp;
+}
+}
+</script>
+<div id=”nextPage”>
+<table>
+<tr style=”font-weight:bold”>
+<td>ID</td><td>Name</td><td>Added Date</td>
+</tr>
+<?php while($category=mysql_fetch_assoc($categoryResult)){ ?>
+<tr style=”background:#CCCCCC”>
+<td><?php echo $category['category_id'] ?></td><td><?php echo $category['category_name'] ?></td><td><?php echo $category['category_added_date'] ?></td>
+</tr>
+<?php }?>
+<tr>
+<td>&nbsp;</td><td>&nbsp;</td>
+<td align=”right”><a href=”javascript:getNextPage(<?php echo $lastPage; ?>);”>Previous </a>| <a href=”javascript:getNextPage(2)”>Next</a></td>
+</tr>
+</table>
+</div>
+
+3) Create the page that run behind the scene and past the below given code . Here its “ext-page.php”
+
+<?php
+include(“db.php”);
+$itemPerPage=3;$pageNo=$_REQUEST['page_no'];
+$totalCategories=mysql_num_rows(mysql_query(“SELECT category_id as total FROM category”));
+$lastPage	 =ceil($totalCategories/$itemPerPage);
+
+$start	 = ($pageNo-1)*$itemPerPage;
+if($lastPage<$pageNo){ $start=0;$pageNo=1;}
+if($totalCategories<$start){ $start=0;$pageNo=1; }
+if($start<0){$pageNo=$lastPage;$start= ($lastPage-1)*$itemPerPage;}
+
+$categoryResult=mysql_query(“SELECT * FROM category ORDER BY category_id DESC LIMIT $start,$itemPerPage”);
+
+?>
+<table>
+<tr style=”font-weight:bold”>
+<td>ID</td><td>Name</td><td>Added Date</td>
+</tr>
+<?php while($category=mysql_fetch_assoc($categoryResult)){ ?>
+<tr style=”background:#CCCCCC”>
+<td><?php echo $category['category_id'] ?></td><td><?php echo $category['category_name'] ?></td><td><?php echo $category['category_added_date'] ?></td>
+</tr>
+<?php }?>
+<tr>
+<td>&nbsp;</td><td>&nbsp;</td>
+<td align=”right”><a href=”javascript:getNextPage(<?php echo $pageNo-1; ?>);”>Previous </a>| <a href=”javascript:getNextPage(<?php echo $pageNo+1; ?>)”>Next</a></td>
+</tr>
+</table>
+
+4) Load the page ajax.php in your browser
